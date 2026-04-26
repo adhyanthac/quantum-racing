@@ -161,32 +161,43 @@ class QuantumGame:
                 terms.append(f"{coeff}{label}")
         return ' + '.join(terms) if terms else '|00⟩'
 
+    def _ry_gate_2q(self, theta, qubit):
+        """
+        Build a 2-qubit Ry(theta) gate acting on the specified qubit.
+        Ry(θ) = [[cos(θ/2), -sin(θ/2)], [sin(θ/2), cos(θ/2)]]
+        """
+        c = np.cos(theta / 2)
+        s = np.sin(theta / 2)
+        Ry = np.array([[c, -s], [s, c]], dtype=complex)
+        I2 = np.eye(2, dtype=complex)
+        if qubit == 'A':
+            return np.kron(Ry, I2)
+        else:
+            return np.kron(I2, Ry)
+
     def apply_hadamard_cnot(self):
         """
-        Press H: Apply REAL Hadamard gate on qubit A, then CNOT(A→B).
+        Press H: Enter superposition with a RANDOMIZED rotation angle.
         
-        H⊗I matrix (Hadamard on first qubit, identity on second):
-        1/√2 * [[1,0,1,0],[0,1,0,1],[1,0,-1,0],[0,1,0,-1]]
+        Instead of a pure Hadamard (which always gives 50/50), we use
+        Ry(θ) with θ randomized between π/3 and 2π/3. This creates
+        UNEQUAL probabilities (e.g. 75/25 or 30/70) that the player
+        must read and react to — making the game STRATEGIC.
         
-        CNOT matrix (control=A, target=B):
-        [[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]]
+        Then CNOT entangles the two qubits so Universe B is correlated.
         
-        From |00⟩ this produces the Bell state: (|00⟩ + |11⟩)/√2
-        This is REAL quantum mechanics — not random amplitudes!
+        The player can then use A/D to apply additional rotations and
+        shift probabilities to dodge incoming lasers.
         """
         if self.paused:
             return
         
-        # Step 1: Hadamard on qubit A (H ⊗ I)
-        h = 1.0 / np.sqrt(2)
-        H_I = np.array([
-            [h, 0, h, 0],
-            [0, h, 0, h],
-            [h, 0, -h, 0],
-            [0, h, 0, -h]
-        ], dtype=complex)
+        # Step 1: Randomized Ry rotation on qubit A (NOT always 50/50!)
+        # θ ∈ [π/3, 2π/3] → probabilities range from ~25/75 to ~75/25
+        theta = np.pi / 3 + random.random() * (np.pi / 3)
+        Ry_I = self._ry_gate_2q(theta, 'A')
         
-        # Step 2: CNOT (control=A, target=B)
+        # Step 2: CNOT (control=A, target=B) — creates entanglement
         CNOT = np.array([
             [1, 0, 0, 0],
             [0, 1, 0, 0],
@@ -194,35 +205,38 @@ class QuantumGame:
             [0, 0, 1, 0]
         ], dtype=complex)
         
-        # Apply H⊗I then CNOT
-        self.state = CNOT @ (H_I @ self.state)
+        # Apply Ry⊗I then CNOT
+        self.state = CNOT @ (Ry_I @ self.state)
         self.in_superposition = True
         self.hadamard_uses += 1
         self.lane_offset = 0
         self.superposition_frame = self.frame
         self.phase_A = 0.0
-        self.gate_log.append('H⊗I')
+        self.gate_log.append(f'Ry({theta:.2f})⊗I')
         self.gate_log.append('CNOT')
 
     def apply_phase_gate(self):
         """
-        Press S: Apply S gate (phase gate) on qubit A.
-        S = diag(1, 1, i, i) in the 2-qubit basis.
-        This rotates phase by π/2 without changing measurement probabilities.
-        The effect shows up in interference when combined with other gates.
+        Press S: Apply Ry(π/5) on qubit B — shifts Universe B probabilities.
+        
+        This gives the player independent control over Universe B's lane
+        probabilities, separate from the A/D keys that control Universe A.
+        Strategic use: if a laser is coming in Universe B, press S to
+        shift your probability away from that lane.
         """
         if self.paused or not self.in_superposition:
             return
         
-        S_I = np.array([
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 1j, 0],
-            [0, 0, 0, 1j]
-        ], dtype=complex)
-        self.state = S_I @ self.state
-        self.phase_A = (self.phase_A + np.pi / 2) % (2 * np.pi)
-        self.gate_log.append('S')
+        # Ry(π/5) on qubit B — rotates B's probability by ~20%
+        theta = np.pi / 5
+        Ry_B = self._ry_gate_2q(theta, 'B')
+        self.state = Ry_B @ self.state
+        # Renormalize (safety)
+        norm = np.linalg.norm(self.state)
+        if norm > 0:
+            self.state = self.state / norm
+        self.phase_A = (self.phase_A + np.pi / 5) % (2 * np.pi)
+        self.gate_log.append('Ry_B')
 
     def apply_laser_switch(self):
         """
@@ -248,16 +262,26 @@ class QuantumGame:
 
     def apply_pauli_x_A(self):
         """
-        Press A or D: Swap lanes
-        In classical mode: directly flip the quantum state
-        In superposition: toggle visual offset (probabilities stay same)
+        Press A or D: Swap lanes / shift probability
+        In classical mode: directly flip the quantum state (Pauli-X)
+        In superposition: apply Ry(π/4) on qubit A — shifts Universe A
+          probability by ~20% per press. This is the PRIMARY strategic
+          control: see a laser coming in left lane? Press A/D to shift
+          your probability toward the right lane!
         """
         if self.paused:
             return
         
         if self.in_superposition:
-            # In superposition, toggle the lane offset for visual swap
-            self.lane_offset = 1 - self.lane_offset
+            # Apply Ry(π/4) on qubit A — shifts probability ~20% per press
+            theta = np.pi / 4
+            Ry_A = self._ry_gate_2q(theta, 'A')
+            self.state = Ry_A @ self.state
+            # Renormalize (safety)
+            norm = np.linalg.norm(self.state)
+            if norm > 0:
+                self.state = self.state / norm
+            self.gate_log.append('Ry_A')
         else:
             # In classical mode, flip the actual quantum state (no offset change)
             pauli_x_I = np.array([
@@ -270,16 +294,25 @@ class QuantumGame:
 
     def apply_pauli_x_B(self):
         """
-        Press ←/→: Swap lanes
-        In classical mode: directly flip the quantum state
-        In superposition: toggle visual offset (probabilities stay same)
+        Press ←/→: Swap lanes / shift probability
+        In classical mode: directly flip the quantum state (Pauli-X)
+        In superposition: apply Ry(-π/4) on qubit A — shifts probability
+          in the OPPOSITE direction. This lets the player fine-tune:
+          A/D shifts right, ←/→ shifts left.
         """
         if self.paused:
             return
         
         if self.in_superposition:
-            # In superposition, toggle the lane offset for visual swap
-            self.lane_offset = 1 - self.lane_offset
+            # Apply Ry(-π/4) on qubit A — shifts probability the OTHER way
+            theta = -np.pi / 4
+            Ry_A = self._ry_gate_2q(theta, 'A')
+            self.state = Ry_A @ self.state
+            # Renormalize (safety)
+            norm = np.linalg.norm(self.state)
+            if norm > 0:
+                self.state = self.state / norm
+            self.gate_log.append('Ry_A†')
         else:
             # In classical mode, flip the actual quantum state (no offset change)
             I_pauli_x = np.array([
@@ -410,7 +443,8 @@ class QuantumGame:
         Survival probability = probability of being in the SAFE lane
         Based on the actual quantum state probabilities.
         
-        Player must read probabilities and choose wisely!
+        Player must read probabilities and use A/D to shift them!
+        Higher probability in the safe lane = higher chance of surviving.
         
         Returns: 'crash' or 'pass'
         """
@@ -424,25 +458,21 @@ class QuantumGame:
                 base_lane = 0
             else:
                 base_lane = 1
-            car_lane = (base_lane + self.lane_offset) % 2
-            return 'crash' if car_lane == laser_lane else 'pass'
+            return 'crash' if base_lane == laser_lane else 'pass'
         
         # QUANTUM MODE: Use TRUE Born rule with actual probabilities!
-        # Calculate probability of survival based on quantum state
-        
-        # Apply lane_offset to determine effective laser lane in quantum basis
-        effective_laser_lane = (laser_lane + self.lane_offset) % 2
+        # No lane_offset — probabilities are directly controlled by gates now
         
         if universe == 'A':
             # Probability car A is in SAFE lane (NOT the laser lane)
-            if effective_laser_lane == 0:  # Laser in left lane
+            if laser_lane == 0:  # Laser in left lane
                 # Safe if A is in right lane: |10⟩ or |11⟩
                 prob_safe = probs[2] + probs[3]
             else:  # Laser in right lane
                 # Safe if A is in left lane: |00⟩ or |01⟩
                 prob_safe = probs[0] + probs[1]
         else:  # Universe B
-            if effective_laser_lane == 0:  # Laser in left lane
+            if laser_lane == 0:  # Laser in left lane
                 # Safe if B is in right lane: |01⟩ or |11⟩
                 prob_safe = probs[1] + probs[3]
             else:  # Laser in right lane
@@ -551,22 +581,14 @@ class QuantumGame:
             base_lane_A = 0 if lane_probs['A']['left'] > lane_probs['A']['right'] else 1
             base_lane_B = 0 if lane_probs['B']['left'] > lane_probs['B']['right'] else 1
         
-        # Apply lane offset (flips lanes when swap is pressed)
-        visual_lane_A = (base_lane_A + self.lane_offset) % 2
-        visual_lane_B = (base_lane_B + self.lane_offset) % 2
+        visual_lane_A = base_lane_A
+        visual_lane_B = base_lane_B
         
-        # Calculate effective probabilities (with offset applied)
-        if self.lane_offset == 0:
-            eff_A_left = lane_probs['A']['left']
-            eff_A_right = lane_probs['A']['right']
-            eff_B_left = lane_probs['B']['left']
-            eff_B_right = lane_probs['B']['right']
-        else:
-            # Offset flips visual lanes
-            eff_A_left = lane_probs['A']['right']
-            eff_A_right = lane_probs['A']['left']
-            eff_B_left = lane_probs['B']['right']
-            eff_B_right = lane_probs['B']['left']
+        # Probabilities come directly from the quantum state now (no offset needed)
+        eff_A_left = lane_probs['A']['left']
+        eff_A_right = lane_probs['A']['right']
+        eff_B_left = lane_probs['B']['left']
+        eff_B_right = lane_probs['B']['right']
         
         return {
             "in_superposition": self.in_superposition,

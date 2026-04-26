@@ -309,9 +309,13 @@ function App() {
       if (key === 'h') {
         wsRef.current.send(JSON.stringify({ action: 'hadamard' }));
       }
-      // A or D = Switch lane (works for all universes)
+      // A or D = Shift probability right (Ry rotation)
       else if (key === 'a' || key === 'd') {
         wsRef.current.send(JSON.stringify({ action: 'pauli_x_A' }));
+      }
+      // S = Shift Universe B probability (Ry_B rotation)
+      else if (key === 's') {
+        wsRef.current.send(JSON.stringify({ action: 'phase_gate' }));
       }
       // Pause
       else if (key === 'p' || key === 'escape') {
@@ -420,17 +424,24 @@ function App() {
                 <div className="control-item">
                   <span className="key-badge">A / D</span>
                   <div className="control-info">
-                    <span className="control-title">Switch Lanes</span>
-                    <span className="control-desc">Move left/right to dodge lasers. In quantum mode, this shifts your probabilities!</span>
+                    <span className="control-title">Shift Probability ↑</span>
+                    <span className="control-desc">In classical mode: switch lanes. In quantum mode: rotate probability toward right lane (~20% per press)!</span>
                   </div>
                 </div>
 
+                <div className="control-item">
+                  <span className="key-badge">S</span>
+                  <div className="control-info">
+                    <span className="control-title">Shift Universe β</span>
+                    <span className="control-desc">Independently shift Universe β's probability. Use when a laser targets β!</span>
+                  </div>
+                </div>
 
                 <div className="control-item">
                   <span className="key-badge">L</span>
                   <div className="control-info">
                     <span className="control-title">Switch Laser</span>
-                    <span className="control-desc">Move the incoming laser to the other universe! (Tactical choice)</span>
+                    <span className="control-desc">Move the incoming laser to the other universe! Choose which universe faces the threat.</span>
                   </div>
                 </div>
                 <div className="control-item">
@@ -448,19 +459,23 @@ function App() {
               <div className="tips-list">
                 <div className="tip-item">
                   <span className="tip-emoji">⚡</span>
-                  <span className="tip-text">Press <strong>H</strong> when a laser is coming - quantum mode gives you a chance to "tunnel" through!</span>
+                  <span className="tip-text">Press <strong>H</strong> when a laser is coming — you'll get random probabilities. Then use <strong>A/D</strong> to shift them!</span>
                 </div>
                 <div className="tip-item">
                   <span className="tip-emoji">👀</span>
-                  <span className="tip-text">Watch the <strong>probability percentages</strong> - higher % = better chance of surviving in that lane!</span>
+                  <span className="tip-text">Watch the <strong>probability percentages</strong> — press A/D to shift your probability AWAY from the laser's lane!</span>
                 </div>
                 <div className="tip-item">
-                  <span className="tip-emoji">🎲</span>
-                  <span className="tip-text">Each quantum mode gives you <strong>random probabilities</strong> - adapt your strategy!</span>
+                  <span className="tip-emoji">🎯</span>
+                  <span className="tip-text">Each A/D press shifts probability by ~20%. If the laser is in the left lane, keep pressing until your LEFT % is low!</span>
+                </div>
+                <div className="tip-item">
+                  <span className="tip-emoji">🔀</span>
+                  <span className="tip-text">Press <strong>L</strong> to move a laser between universes — useful when one universe has better odds!</span>
                 </div>
                 <div className="tip-item">
                   <span className="tip-emoji">🔄</span>
-                  <span className="tip-text">After surviving a laser in quantum mode, you <strong>collapse back</strong> - hit H again!</span>
+                  <span className="tip-text">After surviving a laser in quantum mode, you <strong>collapse back</strong> — hit H again!</span>
                 </div>
               </div>
             </div>
@@ -871,8 +886,9 @@ function App() {
               !gameEnded && (
                 <div className="controls-hud">
                   <div className="control-key"><span>H</span> Superposition</div>
+                  <div className="control-key"><span>A/D</span> Shift Prob</div>
+                  <div className="control-key"><span>S</span> Shift β</div>
                   <div className="control-key"><span>L</span> Move Laser</div>
-                  <div className="control-key"><span>A/D</span> Switch Lane</div>
                 </div>
               )
             }
