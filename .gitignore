@@ -29,3 +29,6 @@ Thumbs.db
 
 # Misc
 *.log
+
+# Local score database
+quantum-racing-backend/scores.db
