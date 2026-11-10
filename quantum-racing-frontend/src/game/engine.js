@@ -26,6 +26,9 @@ const TILT_STRENGTH = 0.8;
 const MIN_BRANCH_P = 0.04;
 const MAX_MULT = 5;
 const INVULN_TIME = 1.5;
+// Tunnelling: a would-be hit can pass through the wall. The chance scales with coherence.
+const TUNNEL_MAX_CHANCE = 0.35;
+const TUNNEL_COST = 0.3;
 
 const POINTS_PER_METRE = 0.5;
 const DODGE_POINTS = 150;
@@ -90,7 +93,7 @@ export class Race {
 
     this.score = 0;
     this.mult = 1;
-    this.stats = { dodges: 0, splits: 0, orbs: 0, observed: 0, hits: 0, maxMult: 1 };
+    this.stats = { dodges: 0, splits: 0, orbs: 0, observed: 0, hits: 0, tunnels: 0, maxMult: 1 };
 
     this.rows = [];
     this.rowId = 0;
@@ -370,6 +373,15 @@ export class Race {
   hit(lane) {
     if (this.autopilot) return;
     if (this.invuln > 0) return;
+    if (this.rand() < TUNNEL_MAX_CHANCE * this.coherence) {
+      this.coherence = Math.max(0, this.coherence - TUNNEL_COST);
+      this.stats.tunnels += 1;
+      this.invuln = 0.35;
+      this.collapseFlash = 1;
+      this.burst(lane, 'quantum', 22, 1.1);
+      this.emit('tunnel');
+      return;
+    }
     this.hull -= 1;
     this.stats.hits += 1;
     this.mult = 1;

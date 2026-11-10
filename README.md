@@ -16,6 +16,7 @@ On touch screens, tap the left or right half of the screen to steer and use the 
 
 - **Walls** (orange) cost a hull point when they hit you. Standard mode gives you 3 hull points and Relaxed gives you 4.
 - **Splitting** costs coherence and keeps draining it while you stay split. If coherence runs out, you collapse into a random lane, weighted by probability.
+- **Tunnelling:** a wall that would hit you has a chance to let you pass through instead. The chance is up to 35% and scales with your coherence; tunnelling spends some coherence.
 - **Photons** (blue) refill coherence. While split, you collect them in every lane you occupy.
 - **Observer gates** (yellow, from sector 2) force a random weighted collapse. Collapse on your own terms first, or tilt the odds hard toward one lane.
 - **Sectors** are 1.2 km long. The road gets faster and denser with each one, and tight pairs of walls start appearing.

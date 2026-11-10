@@ -77,6 +77,10 @@ export function createAudio() {
       tone({ type: 'triangle', from: base, dur: 0.09, gain: 0.12 });
       tone({ type: 'triangle', from: base * 1.5, dur: 0.14, gain: 0.1, delay: 0.07 });
     },
+    tunnel: () => {
+      tone({ type: 'sine', from: 220, to: 1100, dur: 0.28, gain: 0.12 });
+      tone({ type: 'sine', from: 1100, to: 440, dur: 0.2, gain: 0.07, delay: 0.2 });
+    },
     orb: () => tone({ type: 'sine', from: 1320, to: 1760, dur: 0.1, gain: 0.08 }),
     gateclear: () => tone({ type: 'triangle', from: 660, to: 990, dur: 0.12, gain: 0.07 }),
     hit: () => {

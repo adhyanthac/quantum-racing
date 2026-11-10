@@ -54,7 +54,7 @@ const RULES = [
   {
     title: 'Coherence',
     keys: [],
-    body: 'Splitting drains coherence. Blue photons refill it, and you collect them in every lane you occupy. If it runs out, you collapse at random.',
+    body: 'Splitting drains coherence. Blue photons refill it, and you collect them in every lane you occupy. If it runs out, you collapse at random. It also protects you: a wall that would hit you has up to a 35% chance of letting you tunnel through, higher the fuller the meter.',
     diagram: { orb: 2, ghosts: [{ lane: 1, p: 0.5 }, { lane: 2, p: 0.5 }] },
   },
 ];

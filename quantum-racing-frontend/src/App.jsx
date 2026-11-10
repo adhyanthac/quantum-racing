@@ -173,6 +173,10 @@ export default function App() {
             audio.play('gateclear');
             pushToast('Clean pass', `+${e.points}`, 'observer');
             break;
+          case 'tunnel':
+            audio.play('tunnel');
+            pushToast('Tunnelled', 'passed through the wall', 'quantum');
+            break;
           case 'hit':
             audio.play('hit');
             break;

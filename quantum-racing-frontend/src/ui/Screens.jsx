@@ -199,6 +199,8 @@ export function Results({ result, isBest, submit, settings, onNameSubmit, onRetr
     ['Best multiplier', `×${result.maxMult}`],
     ['Photons', result.orbs],
     ['Splits', result.splits],
+    ['Tunnels', result.tunnels],
+    ['Hits taken', result.hits],
   ];
 
   return (
